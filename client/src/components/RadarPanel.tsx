@@ -4,11 +4,15 @@ import 'leaflet/dist/leaflet.css';
 import type { Envelope, RadarFrame, RadarPayload } from '../../../shared/types';
 import { useNow } from '../hooks';
 import { instantClock } from '../format';
+import type { Theme } from '../theme';
 
-const BASEMAP_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const BASEMAP_LIGHT_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const BASEMAP_DARK_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// Both basemaps need credit, so one attribution covers either theme.
 const BASEMAP_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const FRAME_INTERVAL_MS = 700;
+const BASEMAP_PANE = 'basemap';
 // A frame older than this is labelled as not live, so an old scan never looks current.
 const NOT_LIVE_MINUTES = 20;
 
@@ -16,6 +20,7 @@ interface Props {
   envelope: Envelope<RadarPayload> | null;
   center: [number, number];
   timeZone?: string;
+  theme: Theme;
 }
 
 function rainViewerUrl(host: string, path: string): string {
@@ -45,10 +50,11 @@ function buildLayer(p: RadarPayload, frame: RadarFrame): L.TileLayer {
   });
 }
 
-export function RadarPanel({ envelope, center, timeZone }: Props) {
+export function RadarPanel({ envelope, center, timeZone, theme }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.TileLayer | null>(null);
+  const basemapRef = useRef<L.TileLayer | null>(null);
   const layerSourceRef = useRef<string | null>(null);
   const layerKeyRef = useRef<string | null>(null);
 
@@ -66,7 +72,15 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
     const el = mountRef.current;
     if (!el) return;
     const map = L.map(el, { center, zoom: 7, minZoom: 4, maxZoom: 10 });
-    L.tileLayer(BASEMAP_URL, { maxZoom: 18, attribution: BASEMAP_ATTRIBUTION }).addTo(map);
+    // Basemap gets its own pane so it sits below the radar layer.
+    map.createPane(BASEMAP_PANE);
+    map.getPane(BASEMAP_PANE)!.style.zIndex = '150';
+    basemapRef.current = L.tileLayer(BASEMAP_LIGHT_URL, {
+      maxZoom: 18,
+      attribution: BASEMAP_ATTRIBUTION,
+      pane: BASEMAP_PANE,
+      subdomains: 'abc',
+    }).addTo(map);
     L.circleMarker(center, {
       radius: 7,
       color: '#ffffff',
@@ -81,6 +95,7 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
       ro.disconnect();
       map.remove();
       mapRef.current = null;
+      basemapRef.current = null;
       layerRef.current = null;
       layerSourceRef.current = null;
       layerKeyRef.current = null;
@@ -88,6 +103,14 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
     // Intentionally run once: the map is recreated by remounting, not by re-running this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Swap to a true dark basemap in dark mode. The radar layer is not affected.
+  useEffect(() => {
+    const basemap = basemapRef.current;
+    if (!basemap) return;
+    const dark = theme === 'dark';
+    basemap.setUrl(dark ? BASEMAP_DARK_URL : BASEMAP_LIGHT_URL);
+  }, [theme]);
 
   // Show the current frame. Only touch the layer when the frame really changed, so
   // polling with identical data does not reload tiles.
@@ -149,6 +172,13 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
   return (
     <section className="radar" aria-label="Radar map">
       <div className="map" ref={mountRef} />
+
+      <div className="radar-clock" aria-label="Radar time">
+        <span className="radar-clock-label">Radar time</span>
+        <span className="radar-clock-value">
+          {frame ? instantClock(frame.time, timeZone) : '--:--'}
+        </span>
+      </div>
 
       <div className="radar-info">
         <div className="radar-source">{sourceName}</div>

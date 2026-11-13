@@ -26,7 +26,7 @@ export function Forecast({ weather }: Props) {
           </div>
         ))}
       </div>
-      <div className="row">
+      <div className="row daily">
         <div className="row-label">7 days</div>
         {weather.daily.map((d) => (
           <div className="cell" key={d.date}>

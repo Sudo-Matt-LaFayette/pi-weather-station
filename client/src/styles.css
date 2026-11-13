@@ -174,6 +174,42 @@ button:disabled {
   text-overflow: ellipsis;
 }
 
+/* Large radar clock, top right of the map, so the frame time reads at a glance. */
+.radar-clock {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--overlay);
+  text-align: right;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.radar-clock-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.radar-clock-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@media (min-width: 1200px) {
+  .radar-clock-value {
+    font-size: 36px;
+  }
+}
+
 .radar-controls {
   position: absolute;
   left: 6px;
@@ -322,10 +358,10 @@ button:disabled {
   border-color: var(--advisory-line);
 }
 
-/* Forecast: two compact rows. */
+/* Forecast: an hourly row and a larger 7-day row, one tile per day. */
 .forecast {
   flex: 0 0 auto;
-  height: 96px;
+  height: 190px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -385,6 +421,28 @@ button:disabled {
   color: var(--muted);
 }
 
+/* Daily tiles get the extra height, so they read from across the room. */
+.row.daily {
+  flex: 2 1 0;
+}
+
+.row.daily .cell-top {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.row.daily .cell-main {
+  font-size: 32px;
+}
+
+.row.daily .cell-main .low {
+  font-size: 26px;
+}
+
+.row.daily .cell-sub {
+  font-size: 15px;
+}
+
 .attribution {
   flex: 0 0 auto;
   height: 16px;
@@ -414,7 +472,19 @@ button:disabled {
     font-size: 84px;
   }
   .forecast {
-    height: 120px;
+    height: 240px;
+  }
+  .row.daily .cell-top {
+    font-size: 22px;
+  }
+  .row.daily .cell-main {
+    font-size: 40px;
+  }
+  .row.daily .cell-main .low {
+    font-size: 32px;
+  }
+  .row.daily .cell-sub {
+    font-size: 18px;
   }
   .cell-main {
     font-size: 20px;
@@ -518,3 +588,4 @@ button:disabled {
   font-size: 16px;
   min-height: 52px;
 }
+
