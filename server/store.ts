@@ -6,6 +6,8 @@ import { writeFileAtomic } from './atomicFile.js';
 export interface Snapshot<T> {
   data: T;
   fetchedAt: string;
+  /** Location/units the data was fetched for. Mismatched snapshots are discarded. */
+  locationKey?: string;
 }
 
 /** Disk-backed last-good snapshots, so a reboot during an outage still shows data. */

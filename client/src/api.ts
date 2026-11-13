@@ -1,6 +1,7 @@
 import type {
   AlertsPayload,
   Envelope,
+  LocationResult,
   RadarPayload,
   Settings,
   WeatherPayload,
@@ -19,3 +20,21 @@ export const api = {
   alerts: () => getJson<Envelope<AlertsPayload>>('/api/alerts'),
   radar: () => getJson<Envelope<RadarPayload>>('/api/radar/frames'),
 };
+
+export function searchLocations(query: string): Promise<LocationResult[]> {
+  return getJson<LocationResult[]>(`/api/location/search?q=${encodeURIComponent(query)}`);
+}
+
+export async function saveLocation(location: Settings['location']): Promise<Settings> {
+  const res = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ location }),
+  });
+  const body: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = body as { errors?: string[]; error?: string };
+    throw new Error(err.errors?.join('; ') ?? err.error ?? `Server returned ${res.status}`);
+  }
+  return body as Settings;
+}
