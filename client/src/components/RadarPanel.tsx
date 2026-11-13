@@ -13,7 +13,8 @@ const BASEMAP_DARK_URL =
 // Both basemaps need credit, so one attribution covers either theme.
 const BASEMAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.esri.com">Esri</a>';
-const FRAME_INTERVAL_MS = 700;
+// Time between radar frames when playing. Slower keeps the Pi's load down.
+const FRAME_INTERVAL_MS = 3000;
 const BASEMAP_PANE = 'basemap';
 // A frame older than this is labelled as not live, so an old scan never looks current.
 const NOT_LIVE_MINUTES = 20;
