@@ -83,6 +83,7 @@ export default function App() {
             envelope={radar.data}
             center={[location.latitude, location.longitude]}
             timeZone={timeZone}
+            theme={theme}
           />
         ) : (
           <section className="radar placeholder">Loading map…</section>

@@ -4,11 +4,13 @@ import 'leaflet/dist/leaflet.css';
 import type { Envelope, RadarFrame, RadarPayload } from '../../../shared/types';
 import { useNow } from '../hooks';
 import { instantClock } from '../format';
+import type { Theme } from '../theme';
 
 const BASEMAP_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const BASEMAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const FRAME_INTERVAL_MS = 700;
+const BASEMAP_PANE = 'basemap';
 // A frame older than this is labelled as not live, so an old scan never looks current.
 const NOT_LIVE_MINUTES = 20;
 
@@ -16,6 +18,7 @@ interface Props {
   envelope: Envelope<RadarPayload> | null;
   center: [number, number];
   timeZone?: string;
+  theme: Theme;
 }
 
 function rainViewerUrl(host: string, path: string): string {
@@ -45,7 +48,7 @@ function buildLayer(p: RadarPayload, frame: RadarFrame): L.TileLayer {
   });
 }
 
-export function RadarPanel({ envelope, center, timeZone }: Props) {
+export function RadarPanel({ envelope, center, timeZone, theme }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.TileLayer | null>(null);
@@ -66,7 +69,14 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
     const el = mountRef.current;
     if (!el) return;
     const map = L.map(el, { center, zoom: 7, minZoom: 4, maxZoom: 10 });
-    L.tileLayer(BASEMAP_URL, { maxZoom: 18, attribution: BASEMAP_ATTRIBUTION }).addTo(map);
+    // Basemap gets its own pane so it can be darkened without touching the radar layer.
+    map.createPane(BASEMAP_PANE);
+    map.getPane(BASEMAP_PANE)!.style.zIndex = '150';
+    L.tileLayer(BASEMAP_URL, {
+      maxZoom: 18,
+      attribution: BASEMAP_ATTRIBUTION,
+      pane: BASEMAP_PANE,
+    }).addTo(map);
     L.circleMarker(center, {
       radius: 7,
       color: '#ffffff',
@@ -88,6 +98,12 @@ export function RadarPanel({ envelope, center, timeZone }: Props) {
     // Intentionally run once: the map is recreated by remounting, not by re-running this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Darken the basemap in dark mode only. The radar layer is not affected.
+  useEffect(() => {
+    const pane = mapRef.current?.getPane(BASEMAP_PANE);
+    pane?.classList.toggle('basemap-dark', theme === 'dark');
+  }, [theme]);
 
   // Show the current frame. Only touch the layer when the frame really changed, so
   // polling with identical data does not reload tiles.
