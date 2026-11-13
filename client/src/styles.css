@@ -239,10 +239,11 @@ button:disabled {
   accent-color: var(--accent);
 }
 
+/* Sits below the radar clock (top-right), so the two never overlap. */
 .legend {
   position: absolute;
   right: 8px;
-  top: 6px;
+  top: 84px;
   z-index: 1000;
   display: flex;
   align-items: center;
