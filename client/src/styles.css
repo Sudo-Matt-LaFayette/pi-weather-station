@@ -174,6 +174,42 @@ button:disabled {
   text-overflow: ellipsis;
 }
 
+/* Large radar clock, top right of the map, so the frame time reads at a glance. */
+.radar-clock {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--overlay);
+  text-align: right;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.radar-clock-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.radar-clock-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@media (min-width: 1200px) {
+  .radar-clock-value {
+    font-size: 36px;
+  }
+}
+
 .radar-controls {
   position: absolute;
   left: 6px;
@@ -227,8 +263,17 @@ button:disabled {
 }
 
 /* Current conditions card. */
+/* Right-hand column: current conditions, then the next hours. */
+.side {
+  flex: 0 0 240px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .current {
-  flex: 0 0 230px;
+  flex: 0 0 auto;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -322,10 +367,11 @@ button:disabled {
   border-color: var(--advisory-line);
 }
 
-/* Forecast: two compact rows. */
+/* Forecast: the 7-day row along the bottom, one tile per day. Kept short enough
+   that the radar and right column keep room on an 800x480 display. */
 .forecast {
   flex: 0 0 auto;
-  height: 96px;
+  height: 140px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -385,6 +431,28 @@ button:disabled {
   color: var(--muted);
 }
 
+/* Daily tiles get the extra height, so they read from across the room. */
+.row.daily {
+  flex: 2 1 0;
+}
+
+.row.daily .cell-top {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.row.daily .cell-main {
+  font-size: 32px;
+}
+
+.row.daily .cell-main .low {
+  font-size: 26px;
+}
+
+.row.daily .cell-sub {
+  font-size: 15px;
+}
+
 .attribution {
   flex: 0 0 auto;
   height: 16px;
@@ -407,14 +475,23 @@ button:disabled {
 
 /* Larger displays (720p and 1080p) get more room. */
 @media (min-width: 1200px) {
-  .current {
-    flex-basis: 300px;
-  }
   .temp {
     font-size: 84px;
   }
   .forecast {
-    height: 120px;
+    height: 240px;
+  }
+  .row.daily .cell-top {
+    font-size: 22px;
+  }
+  .row.daily .cell-main {
+    font-size: 40px;
+  }
+  .row.daily .cell-main .low {
+    font-size: 32px;
+  }
+  .row.daily .cell-sub {
+    font-size: 18px;
   }
   .cell-main {
     font-size: 20px;
@@ -519,8 +596,79 @@ button:disabled {
   min-height: 52px;
 }
 
-/* Dark map: invert the OpenStreetMap basemap, then tone it down. Dark theme only. */
-.leaflet-basemap-dark,
-.basemap-dark {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.95);
+
+/* Next hours list, under the current conditions. */
+.hourly {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hourly-row {
+  flex: 0 0 auto;
+}
+
+.hourly-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+/* Scrolls rather than clipping when the window is too short for all eight hours. */
+.hourly-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.hourly-row {
+  display: grid;
+  grid-template-columns: 1fr auto 3.2em;
+  align-items: center;
+  font-size: 15px;
+  border-top: 1px solid var(--line);
+  padding: 2px 0;
+}
+
+.hourly-row:first-child {
+  border-top: none;
+}
+
+.hourly-time {
+  color: var(--muted);
+}
+
+.hourly-temp {
+  font-weight: 700;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.hourly-precip {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+@media (min-width: 1200px) {
+  .side {
+    flex-basis: 300px;
+  }
+  .hourly-row {
+    font-size: 18px;
+  }
+  .hourly-precip {
+    font-size: 15px;
+  }
 }
