@@ -7,10 +7,12 @@ import { instantClock } from '../format';
 import type { Theme } from '../theme';
 
 const BASEMAP_LIGHT_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const BASEMAP_DARK_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// Esri's dark gray canvas needs no API key. Its tile path is z/y/x, not z/x/y.
+const BASEMAP_DARK_URL =
+  'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 // Both basemaps need credit, so one attribution covers either theme.
 const BASEMAP_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.esri.com">Esri</a>';
 const FRAME_INTERVAL_MS = 700;
 const BASEMAP_PANE = 'basemap';
 // A frame older than this is labelled as not live, so an old scan never looks current.

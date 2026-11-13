@@ -5,7 +5,7 @@ import { applyTheme, initialTheme, type Theme } from './theme';
 import { Attribution } from './components/Attribution';
 import { AlertBanner } from './components/AlertBanner';
 import { CurrentPanel } from './components/CurrentPanel';
-import { Forecast } from './components/Forecast';
+import { Forecast, HourlyList } from './components/Forecast';
 import { Header } from './components/Header';
 import { LocationSearch } from './components/LocationSearch';
 import { RadarPanel } from './components/RadarPanel';
@@ -83,11 +83,15 @@ export default function App() {
             envelope={radar.data}
             center={[location.latitude, location.longitude]}
             timeZone={timeZone}
+            theme={theme}
           />
         ) : (
           <section className="radar placeholder">Loading map…</section>
         )}
-        <CurrentPanel weather={weatherPayload} />
+        <div className="side">
+          <CurrentPanel weather={weatherPayload} />
+          <HourlyList weather={weatherPayload} />
+        </div>
       </main>
       <Forecast weather={weatherPayload} />
       <Attribution
