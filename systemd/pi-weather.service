@@ -1,0 +1,25 @@
+# Template. scripts/install-pi.sh fills in the __PLACEHOLDERS__ and installs this file.
+[Unit]
+Description=Pi Weather Station (local dashboard server)
+Documentation=file://__ROOT__/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__ROOT__
+Environment=NODE_ENV=production
+Environment=DATA_DIR=__ROOT__/data
+Environment=HOST=127.0.0.1
+Environment=PORT=8080
+ExecStart=__NODE__ __ROOT__/dist/server/server/index.js
+Restart=on-failure
+RestartSec=5
+# The server only needs its own data directory and outbound HTTPS.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=__ROOT__/data
+
+[Install]
+WantedBy=multi-user.target
