@@ -7,6 +7,8 @@ export interface PollerOptions<T> {
   run: () => Promise<T>;
   intervalMs: () => number;
   maxBackoffMs?: number;
+  /** What the data depends on (location, units). Snapshots for another key are not used. */
+  key?: () => string;
 }
 
 const BASE_BACKOFF_MS = 30_000;
@@ -24,6 +26,8 @@ export class Poller<T> {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight: Promise<void> | null = null;
   private running = false;
+  /** Set when refresh() is requested while an attempt is already running. */
+  private pending = false;
 
   constructor(private readonly opts: PollerOptions<T>) {}
 
@@ -32,7 +36,9 @@ export class Poller<T> {
   }
 
   async init(): Promise<void> {
-    this.snapshot = await this.opts.store.read<T>(this.opts.name);
+    const saved = await this.opts.store.read<T>(this.opts.name);
+    const key = this.opts.key?.();
+    this.snapshot = saved && (key === undefined || saved.locationKey === key) ? saved : null;
   }
 
   start(): void {
@@ -47,12 +53,28 @@ export class Poller<T> {
 
   /** Runs one refresh now. Concurrent callers share the same in-flight attempt. */
   refresh(): Promise<void> {
-    if (this.inFlight) return this.inFlight;
+    if (this.inFlight) {
+      // Do not drop this request. Run again as soon as the current attempt finishes,
+      // in case it started before a settings change.
+      this.pending = true;
+      return this.inFlight;
+    }
     this.clearTimer();
     this.inFlight = this.attempt().finally(() => {
       this.inFlight = null;
+      if (this.pending) {
+        this.pending = false;
+        this.schedule(0);
+      }
     });
     return this.inFlight;
+  }
+
+  /** Drop the current data, for example after the location changed. */
+  reset(): void {
+    this.snapshot = null;
+    this.error = null;
+    this.failures = 0;
   }
 
   health(): ProviderHealth {
@@ -74,9 +96,15 @@ export class Poller<T> {
 
   private async attempt(): Promise<void> {
     this.lastAttempt = new Date().toISOString();
+    const key = this.opts.key?.();
     try {
       const data = await this.opts.run();
-      const snapshot: Snapshot<T> = { data, fetchedAt: new Date().toISOString() };
+      // Settings changed while this request was running. Discard the result and fetch again.
+      if (this.opts.key && this.opts.key() !== key) {
+        this.schedule(0);
+        return;
+      }
+      const snapshot: Snapshot<T> = { data, fetchedAt: new Date().toISOString(), locationKey: key };
       this.snapshot = snapshot;
       this.error = null;
       this.failures = 0;
