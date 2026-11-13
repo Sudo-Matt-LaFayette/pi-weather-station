@@ -7,6 +7,8 @@ export interface PollerOptions<T> {
   run: () => Promise<T>;
   intervalMs: () => number;
   maxBackoffMs?: number;
+  /** What the data depends on (location, units). Snapshots for another key are not used. */
+  key?: () => string;
 }
 
 const BASE_BACKOFF_MS = 30_000;
@@ -32,7 +34,9 @@ export class Poller<T> {
   }
 
   async init(): Promise<void> {
-    this.snapshot = await this.opts.store.read<T>(this.opts.name);
+    const saved = await this.opts.store.read<T>(this.opts.name);
+    const key = this.opts.key?.();
+    this.snapshot = saved && (key === undefined || saved.locationKey === key) ? saved : null;
   }
 
   start(): void {
@@ -55,6 +59,13 @@ export class Poller<T> {
     return this.inFlight;
   }
 
+  /** Drop the current data, for example after the location changed. */
+  reset(): void {
+    this.snapshot = null;
+    this.error = null;
+    this.failures = 0;
+  }
+
   health(): ProviderHealth {
     return {
       name: this.opts.name,
@@ -74,9 +85,15 @@ export class Poller<T> {
 
   private async attempt(): Promise<void> {
     this.lastAttempt = new Date().toISOString();
+    const key = this.opts.key?.();
     try {
       const data = await this.opts.run();
-      const snapshot: Snapshot<T> = { data, fetchedAt: new Date().toISOString() };
+      // Settings changed while this request was running. Discard the result and fetch again.
+      if (this.opts.key && this.opts.key() !== key) {
+        this.schedule(0);
+        return;
+      }
+      const snapshot: Snapshot<T> = { data, fetchedAt: new Date().toISOString(), locationKey: key };
       this.snapshot = snapshot;
       this.error = null;
       this.failures = 0;

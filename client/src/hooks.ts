@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /** Current time, updated on an interval, so labels such as "5 min ago" stay current. */
 export function useNow(periodMs: number): number {
@@ -13,6 +13,8 @@ export function useNow(periodMs: number): number {
 export interface Polled<T> {
   data: T | null;
   error: string | null;
+  /** Fetch now instead of waiting for the next poll. */
+  refresh: () => void;
 }
 
 /**
@@ -20,7 +22,12 @@ export interface Polled<T> {
  * so the screen never goes blank because the local server hiccupped.
  */
 export function usePolling<T>(fetcher: () => Promise<T>, intervalMs: number): Polled<T> {
-  const [state, setState] = useState<Polled<T>>({ data: null, error: null });
+  const [state, setState] = useState<{ data: T | null; error: string | null }>({
+    data: null,
+    error: null,
+  });
+  const [nonce, setNonce] = useState(0);
+
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -44,6 +51,9 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs: number): Po
       alive = false;
       if (timer) clearTimeout(timer);
     };
-  }, [fetcher, intervalMs]);
-  return state;
+    // A changed nonce restarts the loop immediately (see refresh).
+  }, [fetcher, intervalMs, nonce]);
+
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+  return { data: state.data, error: state.error, refresh };
 }

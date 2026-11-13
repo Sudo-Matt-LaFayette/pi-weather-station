@@ -79,3 +79,38 @@ describe('Poller', () => {
     expect(at(20)).toBeLessThanOrEqual(120_000 * 1.2);
   });
 });
+
+describe('Poller location keys', () => {
+  it('ignores a saved snapshot that belongs to a different location', async () => {
+    const store = new SnapshotStore(dir);
+    let key = 'A';
+    const first = new Poller<number>({
+      name: 'weather', store, intervalMs: () => 60_000, run: async () => 1, key: () => key,
+    });
+    await first.refresh();
+    key = 'B';
+    const second = new Poller<number>({
+      name: 'weather', store, intervalMs: () => 60_000, run: async () => 2, key: () => key,
+    });
+    await second.init();
+    expect(second.snapshot).toBeNull();
+  });
+
+  it('discards a result that finishes after the location changed', async () => {
+    const store = new SnapshotStore(dir);
+    let key = 'A';
+    let release!: (v: number) => void;
+    const poller = new Poller<number>({
+      name: 'weather',
+      store,
+      intervalMs: () => 60_000,
+      run: () => new Promise<number>((resolve) => { release = resolve; }),
+      key: () => key,
+    });
+    const pending = poller.refresh();
+    key = 'B';
+    release(42);
+    await pending;
+    expect(poller.snapshot).toBeNull();
+  });
+});

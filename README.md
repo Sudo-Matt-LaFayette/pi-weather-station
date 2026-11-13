@@ -72,6 +72,14 @@ curl -s "http://127.0.0.1:8080/api/location/search?q=Atlanta"
 
 Settings can also be changed by `PUT /api/settings` from the Pi itself. Requests from other machines are refused.
 
+### Change the location on screen
+
+Tap **Location** in the header, type a city name, and tap a result. The dashboard clears the old place's data and loads the new one, usually within a minute. Results come from Open-Meteo's geocoding service, so searching needs internet access.
+
+### Light and dark mode
+
+Tap **Light** or **Dark** in the header. The choice is saved in the browser. The default is dark.
+
 ## Verify the data sources (do this before relying on the screen)
 
 ```sh
@@ -140,7 +148,7 @@ The compiled app runs with `npm start`. The Pi never compiles TypeScript at runt
 
 ## Known gaps
 
-- No on-screen settings page yet. Location and units are set in `data/settings.json` (the plan's first-run setup screen is a later milestone).
+- Units are still set only in `data/settings.json`. Location and theme are changed on screen.
 - Hourly visibility is not requested from Open-Meteo.
 - Dew point is not shown because Open-Meteo's current-conditions endpoint does not provide it.
 - The forecast view for very small screens is not built. The 800×480 layout shows 8 hours and 7 days in compact rows instead.

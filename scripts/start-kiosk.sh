@@ -25,7 +25,6 @@ done
 while true; do
   "$BROWSER" \
     --kiosk \
-    --incognito \
     --noerrdialogs \
     --disable-infobars \
     --disable-session-crashed-bubble \

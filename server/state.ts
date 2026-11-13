@@ -20,6 +20,13 @@ const WEATHER_STALE_MS = 30 * MINUTE;
 const ALERTS_STALE_MS = 10 * MINUTE;
 const RADAR_STALE_MS = 10 * MINUTE;
 
+// Each data source depends on different settings. A change to those settings
+// discards that source's data, so old-location data is never shown.
+const weatherKey = (s: Settings): string => `${s.location.latitude},${s.location.longitude},${s.units}`;
+const alertsKey = (s: Settings): string => `${s.location.latitude},${s.location.longitude}`;
+const radarKey = (s: Settings): string =>
+  `${s.location.latitude},${s.location.longitude},${s.radarSource},${s.noaa.wmsUrl},${s.noaa.layer}`;
+
 export class AppState {
   readonly startedAt = new Date().toISOString();
   readonly settingsFile: string;
@@ -37,6 +44,7 @@ export class AppState {
       store,
       intervalMs: () => this.settings.refreshMinutes.weather * MINUTE,
       run: () => fetchWeather(this.settings, new Date()),
+      key: () => weatherKey(this.settings),
     });
     this.alerts = new Poller<AlertsPayload>({
       name: 'alerts',
@@ -44,6 +52,7 @@ export class AppState {
       intervalMs: () => this.settings.refreshMinutes.alerts * MINUTE,
       run: () => fetchAlerts(this.settings, new Date()),
       maxBackoffMs: 10 * MINUTE,
+      key: () => alertsKey(this.settings),
     });
     this.radar = new Poller<RadarPayload>({
       name: 'radar',
@@ -51,6 +60,7 @@ export class AppState {
       intervalMs: () => this.settings.refreshMinutes.radar * MINUTE,
       run: () => fetchRadar(this.settings, new Date()),
       maxBackoffMs: 10 * MINUTE,
+      key: () => radarKey(this.settings),
     });
   }
 
@@ -75,8 +85,12 @@ export class AppState {
   }
 
   async updateSettings(next: Settings): Promise<void> {
+    const prev = this.settings;
     await saveSettings(this.settingsFile, next);
     this.settings = next;
+    if (weatherKey(prev) !== weatherKey(next)) this.weather.reset();
+    if (alertsKey(prev) !== alertsKey(next)) this.alerts.reset();
+    if (radarKey(prev) !== radarKey(next)) this.radar.reset();
     // Refresh in the background so the PUT response is not held up by upstream calls.
     void this.weather.refresh();
     void this.alerts.refresh();
