@@ -17,6 +17,9 @@ const SETTINGS_POLL_MS = 5 * 60_000;
 // After a location change, poll quickly for a short while so new data appears soon.
 const BURST_INTERVAL_MS = 4_000;
 const BURST_TICKS = 10;
+// Reload the whole page on a timer, so a kiosk screen recovers if it ever freezes.
+// Data is already refreshed every minute; this covers the browser itself.
+const PAGE_RELOAD_MS = 30 * 60_000;
 
 export default function App() {
   const now = useNow(15_000);
@@ -30,6 +33,11 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    const id = setTimeout(() => window.location.reload(), PAGE_RELOAD_MS);
+    return () => clearTimeout(id);
+  }, []);
 
   const refreshAllRef = useRef<() => void>(() => {});
   refreshAllRef.current = () => {
