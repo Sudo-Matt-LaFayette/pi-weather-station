@@ -26,6 +26,8 @@ export class Poller<T> {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight: Promise<void> | null = null;
   private running = false;
+  /** Set when refresh() is requested while an attempt is already running. */
+  private pending = false;
 
   constructor(private readonly opts: PollerOptions<T>) {}
 
@@ -51,10 +53,19 @@ export class Poller<T> {
 
   /** Runs one refresh now. Concurrent callers share the same in-flight attempt. */
   refresh(): Promise<void> {
-    if (this.inFlight) return this.inFlight;
+    if (this.inFlight) {
+      // Do not drop this request. Run again as soon as the current attempt finishes,
+      // in case it started before a settings change.
+      this.pending = true;
+      return this.inFlight;
+    }
     this.clearTimer();
     this.inFlight = this.attempt().finally(() => {
       this.inFlight = null;
+      if (this.pending) {
+        this.pending = false;
+        this.schedule(0);
+      }
     });
     return this.inFlight;
   }

@@ -114,3 +114,60 @@ describe('Poller location keys', () => {
     expect(poller.snapshot).toBeNull();
   });
 });
+
+describe('Poller refresh while busy', () => {
+  it('fetches again when a refresh is requested during an attempt', async () => {
+    const store = new SnapshotStore(dir);
+    let calls = 0;
+    let release!: (v: number) => void;
+    const poller = new Poller<number>({
+      name: 'weather',
+      store,
+      intervalMs: () => 60_000,
+      run: () => {
+        calls += 1;
+        if (calls === 1) return new Promise<number>((resolve) => { release = resolve; });
+        return Promise.resolve(calls);
+      },
+    });
+    poller.start();
+    poller.refresh(); // requested while the first attempt is still running
+    release(1);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(calls).toBe(2);
+    expect(poller.snapshot?.data).toBe(2);
+    poller.stop();
+  });
+
+  it('does not keep data from a location that changed during the store write', async () => {
+    const real = new SnapshotStore(dir);
+    let key = 'A';
+    let calls = 0;
+    let releaseWrite!: () => void;
+    const slowStore = {
+      read: real.read.bind(real),
+      write: async <T,>(name: string, snap: { data: T; fetchedAt: string; locationKey?: string }) => {
+        // Hold the write open so the location can change mid-attempt.
+        await new Promise<void>((resolve) => { releaseWrite = resolve; });
+        return real.write(name, snap);
+      },
+    } as unknown as SnapshotStore;
+    const poller = new Poller<string>({
+      name: 'weather',
+      store: slowStore,
+      intervalMs: () => 60_000,
+      run: async () => { calls += 1; return `data-for-${key}`; },
+      key: () => key,
+    });
+    poller.start();
+    await new Promise((r) => setTimeout(r, 10)); // first attempt is now waiting on the write
+    key = 'B';
+    poller.reset();
+    poller.refresh();
+    releaseWrite();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(calls).toBeGreaterThanOrEqual(2);
+    expect(poller.snapshot?.data).toBe('data-for-B');
+    poller.stop();
+  });
+});
