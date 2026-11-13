@@ -367,10 +367,11 @@ button:disabled {
   border-color: var(--advisory-line);
 }
 
-/* Forecast: an hourly row and a larger 7-day row, one tile per day. */
+/* Forecast: the 7-day row along the bottom, one tile per day. Kept short enough
+   that the radar and right column keep room on an 800x480 display. */
 .forecast {
   flex: 0 0 auto;
-  height: 190px;
+  height: 140px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -606,6 +607,10 @@ button:disabled {
   overflow: hidden;
 }
 
+.hourly-row {
+  flex: 0 0 auto;
+}
+
 .hourly-title {
   font-size: 11px;
   font-weight: 700;
@@ -615,15 +620,16 @@ button:disabled {
   margin-bottom: 4px;
 }
 
+/* Scrolls rather than clipping when the window is too short for all eight hours. */
 .hourly-list {
   list-style: none;
   margin: 0;
   padding: 0;
   flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .hourly-row {
