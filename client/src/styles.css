@@ -518,3 +518,9 @@ button:disabled {
   font-size: 16px;
   min-height: 52px;
 }
+
+/* Dark map: invert the OpenStreetMap basemap, then tone it down. Dark theme only. */
+.leaflet-basemap-dark,
+.basemap-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.95);
+}
