@@ -30,7 +30,17 @@ Run the first-run checks in "Verify the data sources" below before trusting the 
 
 ## Install on the Pi
 
-1. Install Node.js 20 or newer (for example from NodeSource, or `sudo apt install nodejs` if your OS version provides 20+).
+1. Install Node.js 20 or newer
+
+# Download and install nvm:
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.41.0/install.sh | bash
+
+# in lieu of restarting the shell
+\. "$HOME/.nvm/nvm.sh"
+
+# Download and install Node.js:
+nvm install 26
+
 2. Install Chromium: `sudo apt install chromium-browser` (or `chromium` on newer releases).
 3. Copy this project folder to the Pi, for example to `/home/pi/pi-weather-station`.
 4. From the project folder, run:
@@ -39,7 +49,7 @@ Run the first-run checks in "Verify the data sources" below before trusting the 
    ./scripts/install-pi.sh
    ```
 
-   The script installs dependencies, builds the app, installs and starts the `pi-weather` systemd service, and adds a kiosk autostart entry. It is safe to re-run. The first install on a Pi 4 can take several minutes.
+   (If you encounter a permission error then run chmod +x) The script installs dependencies, builds the app, installs and starts the `pi-weather` systemd service, and adds a kiosk autostart entry. It is safe to re-run. The first install on a Pi 4 can take several minutes.
 5. Reboot. The monitor should open the dashboard full-screen.
 
 To remove it: `./scripts/uninstall-pi.sh`. This keeps the project folder and `data/`.
